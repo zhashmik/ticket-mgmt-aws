@@ -1,5 +1,5 @@
 {
-  "app": "mvn -e -q compile exec:java -Dexec.mainClass=com.ticketmgmt.cdk.CdkApp",
+  "app": "./mvnw -e -q compile exec:java -Dexec.mainClass=com.ticketmgmt.cdk.CdkApp",
   "context": {
     "@aws-cdk/core:bootstrapQualifier": "hnb659fds"
   }

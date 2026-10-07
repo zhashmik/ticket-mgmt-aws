@@ -53,9 +53,11 @@ ticket-mgmt-aws/
 │   ├── application.yml        # local + docker profiles
 │   ├── application-aws.yml    # aws profile
 │   └── db/migration/          # Flyway schema (V1__init_schema.sql)
-├── cdk/               # AWS CDK app (VPC, Database, Cognito, Storage stacks)
+├── cdk/               # AWS CDK app: Vpc, Database, Cognito, Storage,
+│                      #   Messaging (SNS + Lambdas), Ecs (Fargate + ALB)
 ├── frontend/          # static SPA (index.html, css/, js/)
 ├── docs/              # architecture.drawio
+├── DEPLOYMENT.md      # step-by-step AWS deploy guide
 ├── scripts/deploy.sh  # one-command AWS deploy
 ├── Dockerfile         # multi-stage build on Amazon Corretto 21
 ├── docker-compose.yml # local app + MySQL
@@ -145,14 +147,19 @@ Select with `SPRING_PROFILES_ACTIVE`.
 Requires AWS CLI (configured), Docker, Node + AWS CDK CLI (`npm i -g aws-cdk`), Java 21+.
 
 ```bash
+export AWS_REGION=us-west-2
+export SES_FROM_EMAIL=you@example.com   # must be an SES-verified sender
 ./scripts/deploy.sh
 ```
 
-This builds the jar, builds and pushes the Docker image to ECR, bootstraps and
-deploys the CDK stacks (VPC, Aurora, Cognito, S3), and prints the stack outputs.
-Create an ECS/Fargate service (or App Runner) from the pushed image, wire the
-stack outputs into the `aws`-profile environment variables, and run with
-`SPRING_PROFILES_ACTIVE=aws`.
+This builds the jar, builds and pushes the Docker image to ECR, bootstraps CDK,
+and deploys **six stacks**: VPC, Aurora MySQL, Cognito, S3, Messaging
+(SNS + PDF/reminder Lambdas), and the **ECS Fargate service + ALB** that runs the
+container with `SPRING_PROFILES_ACTIVE=aws`. The public API URL is printed as the
+`LoadBalancerUrl` output of the `TicketMgmt-Ecs` stack.
+
+See **[DEPLOYMENT.md](DEPLOYMENT.md)** for prerequisites, the stack breakdown,
+Cognito user creation, frontend hosting, updates, and teardown.
 
 ### Required `aws` profile environment variables
 

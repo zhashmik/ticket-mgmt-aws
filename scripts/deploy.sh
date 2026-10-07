@@ -37,19 +37,34 @@ echo "3/5 — Bootstrapping CDK (idempotent)..."
 cd "$ROOT_DIR/cdk"
 cdk bootstrap "aws://$ACCOUNT_ID/$REGION"
 
-echo "4/5 — Deploying infrastructure stacks..."
+echo "4/5 — Deploying all infrastructure + compute stacks..."
+# Order matters: foundational stacks first, then messaging, then ECS.
 cdk deploy --all --require-approval never
 
 echo "5/5 — Stack outputs:"
-for stack in TicketMgmt-Vpc TicketMgmt-Database TicketMgmt-Cognito TicketMgmt-Storage; do
+for stack in TicketMgmt-Vpc TicketMgmt-Database TicketMgmt-Cognito \
+             TicketMgmt-Storage TicketMgmt-Messaging TicketMgmt-Ecs; do
   echo "--- $stack ---"
   aws cloudformation describe-stacks --stack-name "$stack" --region "$REGION" \
     --query "Stacks[0].Outputs" --output table 2>/dev/null || echo "(no outputs)"
 done
 
 echo ""
+echo "6 — Forcing a fresh ECS deployment to pull the image just pushed..."
+aws ecs update-service \
+  --cluster ticket-mgmt-cluster \
+  --service ticket-mgmt-service \
+  --force-new-deployment \
+  --region "$REGION" >/dev/null 2>&1 \
+  && echo "   ECS service redeploy triggered." \
+  || echo "   (ECS service not found yet — first 'cdk deploy' creates it.)"
+
+echo ""
 echo "✅ Deploy complete."
-echo "Next steps:"
-echo "  • Create an ECS/Fargate service (or App Runner) from image: $ECR_URI:latest"
-echo "  • Set env vars from the Cognito/Storage/Database stack outputs above"
-echo "  • Run with SPRING_PROFILES_ACTIVE=aws"
+echo "The public API URL is in the TicketMgmt-Ecs outputs above (LoadBalancerUrl)."
+echo "The container runs with SPRING_PROFILES_ACTIVE=aws automatically."
+echo ""
+echo "Remaining manual steps (one-time):"
+echo "  • Verify a sender identity in Amazon SES and set SES_FROM_EMAIL before deploy."
+echo "  • If your SES account is in sandbox, verify recipient addresses too."
+echo "  • Create Cognito users/groups (USER, MANAGER, ADMIN groups are created by CDK)."

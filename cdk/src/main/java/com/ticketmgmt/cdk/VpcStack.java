@@ -6,9 +6,22 @@ import software.amazon.awscdk.services.ec2.*;
 import software.constructs.Construct;
 import java.util.List;
 
+/**
+ * Network foundation: a 2-AZ VPC with public, private (NAT egress) and isolated
+ * subnets, plus the database and lambda security groups.
+ *
+ * The ECS/ALB security group is intentionally NOT defined here. The
+ * {@code ApplicationLoadBalancedFargateService} in {@link EcsServiceStack}
+ * creates and manages its own security group; defining it here and referencing
+ * it from the ECS stack would create a cross-stack cyclic dependency.
+ *
+ * Database access is granted by VPC CIDR on the MySQL port rather than by a
+ * cross-stack security-group reference, which keeps the stacks acyclic.
+ */
 public class VpcStack extends Stack {
     private final Vpc vpc;
-    private final SecurityGroup albSg, ecsSg, dbSg, lambdaSg;
+    private final SecurityGroup dbSg;
+    private final SecurityGroup lambdaSg;
 
     public VpcStack(Construct scope, String id, StackProps props) {
         super(scope, id, props);
@@ -21,23 +34,16 @@ public class VpcStack extends Stack {
                 SubnetConfiguration.builder().name("Isolated").subnetType(SubnetType.PRIVATE_ISOLATED).cidrMask(24).build()))
             .natGateways(1).build();
 
-        this.albSg = SecurityGroup.Builder.create(this, "AlbSg").vpc(vpc).securityGroupName("alb-sg").allowAllOutbound(true).build();
-        albSg.addIngressRule(Peer.anyIpv4(), Port.tcp(443), "HTTPS");
-        albSg.addIngressRule(Peer.anyIpv4(), Port.tcp(80), "HTTP");
+        this.lambdaSg = SecurityGroup.Builder.create(this, "LambdaSg")
+            .vpc(vpc).securityGroupName("lambda-sg").allowAllOutbound(true).build();
 
-        this.ecsSg = SecurityGroup.Builder.create(this, "EcsSg").vpc(vpc).securityGroupName("ecs-sg").allowAllOutbound(true).build();
-        ecsSg.addIngressRule(albSg, Port.tcp(8080), "From ALB");
-
-        this.lambdaSg = SecurityGroup.Builder.create(this, "LambdaSg").vpc(vpc).securityGroupName("lambda-sg").allowAllOutbound(true).build();
-
-        this.dbSg = SecurityGroup.Builder.create(this, "DbSg").vpc(vpc).securityGroupName("db-sg").allowAllOutbound(false).build();
-        dbSg.addIngressRule(ecsSg, Port.tcp(3306), "From ECS");
-        dbSg.addIngressRule(lambdaSg, Port.tcp(3306), "From Lambda");
+        // DB reachable on 3306 only from inside the VPC (ECS tasks + Lambdas live here).
+        this.dbSg = SecurityGroup.Builder.create(this, "DbSg")
+            .vpc(vpc).securityGroupName("db-sg").allowAllOutbound(false).build();
+        dbSg.addIngressRule(Peer.ipv4(vpc.getVpcCidrBlock()), Port.tcp(3306), "MySQL from within VPC");
     }
 
     public Vpc getVpc() { return vpc; }
-    public SecurityGroup getAlbSg() { return albSg; }
-    public SecurityGroup getEcsSg() { return ecsSg; }
     public SecurityGroup getDbSg() { return dbSg; }
     public SecurityGroup getLambdaSg() { return lambdaSg; }
 }

@@ -17,7 +17,7 @@ public class StorageStack extends Stack {
             .bucketName("ticket-mgmt-attachments-" + this.getAccount())
             .encryption(BucketEncryption.S3_MANAGED)
             .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-            .versioned(true).removalPolicy(RemovalPolicy.RETAIN).enforceSSL(true)
+            .versioned(true).removalPolicy(RemovalPolicy.RETAIN).enforceSsl(true)
             .lifecycleRules(List.of(
                 LifecycleRule.builder().id("ia-transition").prefix("attachments/")
                     .transitions(List.of(Transition.builder()
