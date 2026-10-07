@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ticket-mgmt-db
+    environment:
+      MYSQL_ROOT_PASSWORD: localdev123
+      MYSQL_DATABASE: ticket_mgmt
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  app:
+    build: .
+    container_name: ticket-mgmt-app
+    depends_on:
+      - mysql
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_ENDPOINT: mysql
+      DB_USERNAME: root
+      DB_PASSWORD: localdev123
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql_data:

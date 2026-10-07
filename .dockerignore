@@ -1,0 +1,11 @@
+target/
+cdk/
+frontend/
+docs/
+.git/
+.github/
+.idea/
+*.md
+*.log
+local-storage/
+.DS_Store

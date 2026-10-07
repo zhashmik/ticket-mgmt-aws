@@ -1,0 +1,34 @@
+# Build output
+target/
+cdk/target/
+cdk/cdk.out/
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# Local runtime
+local-storage/
+*.log
+logs/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+.env.*
+*.pem
+*.p12
+application-local-secrets.yml
+
+# Node (if any tooling added later)
+node_modules/
