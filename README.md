@@ -11,7 +11,7 @@ deploys to AWS using containers on **ECS Fargate** behind an **ALB**, with
 
 ## Architecture
 
-![Architecture](docs/architecture.drawio)
+![Architecture](docs/architecture.jpg)
 
 > The diagram is an editable draw.io file at [`docs/architecture.drawio`](docs/architecture.drawio).
 > Open it at [app.diagrams.net](https://app.diagrams.net) or with the draw.io VS Code extension.
